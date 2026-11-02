@@ -1,7 +1,8 @@
-import {createLobbyCharacter} from './lobby-character.js?v=1.3.1';
-import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.3.1';
+import {createLobbyCharacter} from './lobby-character.js?v=1.3.2';
+import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.3.2';
 const app=document.getElementById('app');
 const lobbyScene='2172808776581645156';
+const outsideScene='2172833417257813860';
 let solved=[];try{solved=validProgress(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'));}catch{}
 let view='board',active=null,lastCompleted=null,lastLeft=null,roomFrame=null,lobbyFrame=null,tracker=null,loadTimeout,character=null,controlCleanup=null,explorerHidden=false;
 const lock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
@@ -18,7 +19,7 @@ if(view==='room'){
 app.innerHTML=header()+'<main class="room-stage"><div class="room-label"><span>MISSION</span><h1>Room '+active.number+'</h1></div>'+loading('Entering Room '+active.number+'…')+'<iframe id="mission-room" title="Room '+active.number+' puzzle" src="'+roomUrl(active.scene)+'" allow="autoplay"></iframe></main>';
 roomFrame=document.getElementById('mission-room');tracker=createDoorTracker(active);watchLoading();document.getElementById('board-button').onclick=leaveRoom;mountRoomHelp();
 }else if(view==='finish'){
-app.innerHTML='<iframe class="backdrop" title="GSE lobby" tabindex="-1" aria-hidden="true" src="'+roomUrl(lobbyScene)+'"></iframe><div class="shade"></div>'+header()+'<main class="finish content-enter"><div class="eyebrow">ALL REQUIRED MISSIONS COMPLETE</div><div class="escape-mark">'+arrow+'</div><h1>You made<br>it out.</h1><p>The doors swing open. You cleared all four required rooms and escaped Haunted GSE. Congratulations!'+(solved.includes('357')?' You cleared the bonus room, too!':'')+'</p><div class="finished-rooms">'+ROOMS.filter(r=>!r.optional||solved.includes(r.number)).map(r=>'<span>✓ '+r.number+(r.optional?' · bonus':'')+'</span>').join('')+'</div><button class="primary" id="new-attempt">Start a new escape '+arrow+'</button></main>';
+app.innerHTML='<iframe class="backdrop" title="Outside Penn GSE" tabindex="-1" aria-hidden="true" src="'+roomUrl(outsideScene)+'"></iframe><div class="shade"></div>'+header()+'<main class="finish content-enter"><div class="eyebrow">OUTSIDE PENN GSE</div><div class="escape-mark">'+arrow+'</div><h1>You made<br>it out.</h1><p>You step outside onto Walnut Street. All four required rooms are clear, and you have escaped Haunted GSE. Congratulations!'+(solved.includes('357')?' You cleared the bonus room, too!':'')+'</p><div class="finished-rooms">'+ROOMS.filter(r=>!r.optional||solved.includes(r.number)).map(r=>'<span>✓ '+r.number+(r.optional?' · bonus':'')+'</span>').join('')+'</div><button class="primary" id="new-attempt">Start a new escape '+arrow+'</button></main>';
 document.getElementById('new-attempt').onclick=newAttempt;
 }else{
 const left=requiredRemaining(solved),allDone=canEscape(solved);
