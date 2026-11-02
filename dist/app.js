@@ -1,5 +1,5 @@
-import {createLobbyCharacter} from './lobby-character.js';
-import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js';
+import {createLobbyCharacter} from './lobby-character.js?v=1.3.1';
+import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.3.1';
 const app=document.getElementById('app');
 const lobbyScene='2172808776581645156';
 let solved=[];try{solved=validProgress(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'));}catch{}

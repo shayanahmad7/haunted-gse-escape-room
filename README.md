@@ -66,6 +66,8 @@ npm run vendor
 
 ## Current version
 
-Version 1.3.0 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
+Version 1.3.1 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
 
 Website source snapshot: primary Site commit `40e7f1faf650f067e8de0ec833a8778dcfc16a71`.
+
+Application and stylesheet URLs are versioned so browser caches pick up the current interface after an update.
