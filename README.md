@@ -1,25 +1,23 @@
 # Haunted GSE: Four Missions + Bonus
 
-A Halloween escape activity with four required ThingLink puzzle rooms, an optional bonus room, an interactive 360° lobby, and an animated 3D explorer.
+A Halloween escape activity using an interactive 360° lobby and five existing ThingLink puzzle rooms.
 
-- **Independent backup site:** https://shayanahmad7.github.io/haunted-gse-escape-room/
+- **Backup site:** https://shayanahmad7.github.io/haunted-gse-escape-room/
 - **Primary site:** https://haunted-gse-five-missions.nutmegcarp516.chatgpt.site/
 
 ## Play
 
-Choose rooms in any order. A simplified 3D route preview shows the explorer walking from the main lobby into the elevator, riding to the selected floor, and following the appropriate corridor to the room. The corridor centerlines and room locations are based on Penn GSE's published complex floor plans. The preview runs at 2x speed and can be skipped. Corridor widths, floor heights, and finishes are illustrative, rather than a surveyed 3D reconstruction.
+Choose a room from the lobby to open its original ThingLink view directly. Inside a room, drag or swipe to look around, zoom, click clue markers, and enter your answer at the door. **How to explore** opens the room instructions. You can return to the lobby to try a different room without earning completion credit for an unsolved room.
 
-Solve the room's existing door puzzle to return to the lobby with completion credit. You can also leave an unsolved room and try another. Each successful door answer earns one point. Rooms 202, 259, 322, and 355 are required, and the main exit opens after those four are solved. Room 357 is an optional one-point bonus that stays locked until two distinct missions have been completed. Solving the bonus never substitutes for a required room. Its unlock rule is enforced in the directory and room-entry handlers. A new attempt resets progress on that browser.
+Each successful door answer earns one point. Rooms **202, 259, 322, and 355** are required. The main exit opens when those four are solved. Room **357** is an optional one-point bonus that unlocks after two distinct missions have been completed. The bonus cannot substitute for a required room.
 
-Room instructions explain dragging/swiping to look around, zooming, opening clue markers, entering door answers, and leaving an unsolved room. They appear on the first room visit and can be reopened with **How to explore**. Furniture is part of the room photograph and cannot be picked up.
+The 3D explorer appears only on the lobby screen. There are no character overlays, route previews, elevator rides, or artificial travel delays inside the puzzle rooms. Room photos and puzzles remain in ThingLink.
 
-The explorer remains visible in the lobby and puzzle rooms. Drag the character, click its arrow controls, or use arrow keys/WASD while those controls are focused. It reacts to clue interactions and can be hidden. It is an overlay companion; the cross-origin ThingLink viewer does not expose camera-drag events, so the character does not track the panorama camera or collide with furniture in the photograph.
-
-The class uses a shared 10-minute presentation timer. The website does not run a separate countdown. Progress stays in browser-local storage, so it is independent on the primary and backup sites.
+The activity uses a shared 10-minute presentation timer. The website does not run a separate countdown. Progress stays in browser-local storage and is independent on the primary and backup sites. **New attempt** resets progress in that browser.
 
 ## Run locally
 
-The website is static and needs no API keys, backend, or build step. Three.js is already vendored in `dist/vendor/`.
+The website is static and needs no API keys, backend, or build step. Three.js is already included in `dist/vendor/` for the lobby mascot.
 
 ```sh
 git clone https://github.com/shayanahmad7/haunted-gse-escape-room.git
@@ -27,9 +25,7 @@ cd haunted-gse-escape-room
 python3 -m http.server 8080 --directory dist
 ```
 
-Open http://localhost:8080.
-
-With Node.js installed, run checks:
+Open http://localhost:8080. With Node.js installed, run:
 
 ```sh
 npm run check
@@ -38,46 +34,38 @@ npm test
 
 ## Deploy and recover
 
-Every push to `main` runs syntax checks and the mission-completion tests, then publishes `dist/` to GitHub Pages. Pull requests run checks without deploying. You can also run the workflow from the repository's Actions tab.
+Every push to `main` runs JavaScript syntax checks and the mission-completion tests, then publishes `dist/` to GitHub Pages. Pull requests run checks without deploying. The workflow can also be run from the repository's Actions tab.
 
-If the primary hosting link stops working, use the independent backup link above. To deploy elsewhere, upload the contents of `dist/` to any static HTTPS host. Relative asset paths support deployment in a subdirectory.
+If the primary hosting link stops working, use the backup link above. For another static HTTPS host, upload the contents of `dist/`. Relative asset paths support subdirectory hosting. Tagged releases provide ready-to-host ZIP archives.
 
-The room panoramas, puzzles, and password gates are embedded from ThingLink. Both deployments depend on those scenes remaining available to viewers. Google Fonts is used for typography; local fallback fonts are supplied in the stylesheet.
+Both deployments load the room panoramas, puzzles, and password gates from ThingLink, so those scenes must remain available to viewers. Password changes are managed in ThingLink, not in this code. Google Fonts provides typography with local fallback fonts in the stylesheet.
 
 ## Project files
 
 | Path | Purpose |
 | --- | --- |
 | `dist/index.html` | Website entry point |
-| `dist/app.js` | Lobby, room journeys, navigation, and progress |
-| `dist/lobby-character.js` | Persistent Three.js companion, walking and elevator preview |
-| `dist/gse-routes.js` | Plan-based corridor centerlines and elevator connections |
-| `dist/mission-state.js` | Room IDs, trusted message handling, and completion rules |
+| `dist/app.js` | Lobby, direct room navigation, help, and progress |
+| `dist/lobby-character.js` | Lobby-only Three.js mascot |
+| `dist/mission-state.js` | Room IDs, bonus unlock, required rooms, and trusted completion events |
 | `dist/styles.css` | Responsive appearance |
 | `dist/vendor/` | Pinned Three.js runtime and its MIT license |
-| `mission-state.test.js` | Checks for successful door events, distinct completion, and trusted origins |
-| `gse-routes.test.js` | Route continuity, elevator alignment, floors and destination wings |
-| `.github/workflows/deploy.yml` | Seven mission/route checks and GitHub Pages publication |
+| `mission-state.test.js` | Five checks for completion, required rooms, bonus gating, and trusted origins |
+| `.github/workflows/deploy.yml` | Tests and GitHub Pages publication |
 
-Route sources are linked in `dist/gse-routes.js`: [Penn GSE building information](https://onepenn.gse.upenn.edu/facility-services/information-by-building), including the published first-, second-, and third-floor complex plans. The reference PDFs are not redistributed in this repository.
-
-Room mappings are in `dist/mission-state.js`. Rooms 202 and 259 are on floor 2; rooms 322, 355, and 357 are on floor 3. Room content is edited in ThingLink rather than in this repository.
+Room content is edited in ThingLink. The repository contains the website shell and no course notes, recordings, account credentials, or primary-host configuration.
 
 ## Update Three.js
 
-The current version is pinned in `package-lock.json`. To restore the vendored files from that version:
+To restore the vendored runtime from the pinned dependency:
 
 ```sh
 npm ci
 npm run vendor
 ```
 
-## Backup source
+## Current version
 
-Initial website snapshot: primary Site commit `32102ac5761217d0ab95098f888b46f711119285`, saved version 5, November 2, 2026. The website files were copied directly; course notes, recordings, account credentials, and primary-host configuration are not included.
+Version 1.3.0 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
 
-Current snapshot: version 1.1.0, primary Site commit `a8fe3043b6fa960f4aeccb06b7fac056faff42dd`, saved version 6. Adds room navigation instructions, a persistent controllable explorer, plan-based corridor/elevator journeys, and route maps.
-
-Version 1.2.0 makes Room 357 optional and unlocks it after two points. Room 355 uses its current live ThingLink door settings; no password is stored in this repository. The updated door was tested end to end. Existing browser progress is preserved.
-
-Current website source: primary Site commit `19363acafe98ca9c98fc98341f18145900d8e02b` (version 1.2.0).
+Website source snapshot: primary Site commit `40e7f1faf650f067e8de0ec833a8778dcfc16a71`.
