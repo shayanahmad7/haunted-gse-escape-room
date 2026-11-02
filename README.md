@@ -1,6 +1,6 @@
-# Haunted GSE: Five Missions
+# Haunted GSE: Four Missions + Bonus
 
-A Halloween escape activity with five ThingLink puzzle rooms, an interactive 360° lobby, and an animated 3D explorer.
+A Halloween escape activity with four required ThingLink puzzle rooms, an optional bonus room, an interactive 360° lobby, and an animated 3D explorer.
 
 - **Independent backup site:** https://shayanahmad7.github.io/haunted-gse-escape-room/
 - **Primary site:** https://haunted-gse-five-missions.nutmegcarp516.chatgpt.site/
@@ -9,7 +9,7 @@ A Halloween escape activity with five ThingLink puzzle rooms, an interactive 360
 
 Choose rooms in any order. A simplified 3D route preview shows the explorer walking from the main lobby into the elevator, riding to the selected floor, and following the appropriate corridor to the room. The corridor centerlines and room locations are based on Penn GSE's published complex floor plans. The preview runs at 2x speed and can be skipped. Corridor widths, floor heights, and finishes are illustrative, rather than a surveyed 3D reconstruction.
 
-Solve the room's existing door puzzle to return to the lobby with completion credit. You can also leave an unsolved room and try another. Only successful door answers count, and the main exit opens after five distinct missions. A new attempt resets progress on that browser.
+Solve the room's existing door puzzle to return to the lobby with completion credit. You can also leave an unsolved room and try another. Each successful door answer earns one point. Rooms 202, 259, 322, and 355 are required, and the main exit opens after those four are solved. Room 357 is an optional one-point bonus that stays locked until two distinct missions have been completed. Solving the bonus never substitutes for a required room. Its unlock rule is enforced in the directory and room-entry handlers. A new attempt resets progress on that browser.
 
 Room instructions explain dragging/swiping to look around, zooming, opening clue markers, entering door answers, and leaving an unsolved room. They appear on the first room visit and can be reopened with **How to explore**. Furniture is part of the room photograph and cannot be picked up.
 
@@ -57,7 +57,7 @@ The room panoramas, puzzles, and password gates are embedded from ThingLink. Bot
 | `dist/vendor/` | Pinned Three.js runtime and its MIT license |
 | `mission-state.test.js` | Checks for successful door events, distinct completion, and trusted origins |
 | `gse-routes.test.js` | Route continuity, elevator alignment, floors and destination wings |
-| `.github/workflows/deploy.yml` | Tests and GitHub Pages publication |
+| `.github/workflows/deploy.yml` | Seven mission/route checks and GitHub Pages publication |
 
 Route sources are linked in `dist/gse-routes.js`: [Penn GSE building information](https://onepenn.gse.upenn.edu/facility-services/information-by-building), including the published first-, second-, and third-floor complex plans. The reference PDFs are not redistributed in this repository.
 
@@ -77,3 +77,7 @@ npm run vendor
 Initial website snapshot: primary Site commit `32102ac5761217d0ab95098f888b46f711119285`, saved version 5, November 2, 2026. The website files were copied directly; course notes, recordings, account credentials, and primary-host configuration are not included.
 
 Current snapshot: version 1.1.0, primary Site commit `a8fe3043b6fa960f4aeccb06b7fac056faff42dd`, saved version 6. Adds room navigation instructions, a persistent controllable explorer, plan-based corridor/elevator journeys, and route maps.
+
+Version 1.2.0 makes Room 357 optional and unlocks it after two points. Room 355 uses its current live ThingLink door settings; no password is stored in this repository. The updated door was tested end to end. Existing browser progress is preserved.
+
+Current website source: primary Site commit `19363acafe98ca9c98fc98341f18145900d8e02b` (version 1.2.0).
