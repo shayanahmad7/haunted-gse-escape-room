@@ -11,6 +11,6 @@
     "three": "0.187.0"
   },
   "name": "haunted-gse-escape-room",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "A five-mission Halloween escape experience with a 3D explorer and ThingLink rooms."
 }

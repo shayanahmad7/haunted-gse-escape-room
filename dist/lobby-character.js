@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {createWalker,fromScreen,toScreen} from './lobby-navigation.js?v=1.5.1';
+import {createWalker,fromScreen,toScreen} from './lobby-navigation.js?v=1.6.0';
 
 // A lobby-only 3D mascot. Puzzle rooms use the original ThingLink viewer directly.
 export function createLobbyCharacter(host,{position=[.48,.88],onReady=()=>{}}={}){
@@ -61,6 +61,12 @@ export function createLobbyCharacter(host,{position=[.48,.88],onReady=()=>{}}={}
  }
  raf=requestAnimationFrame(animate);
  return {
+  snapshots(){
+   renderer.clear();renderer.render(backdrop,backdropCamera);const background=renderer.domElement.toDataURL('image/webp',.85);
+   ground.visible=false;rig.visible=show;renderer.clear();renderer.render(scene,camera);const explorer=renderer.domElement.toDataURL('image/webp',.9);ground.visible=true;
+   renderer.clear();renderer.render(backdrop,backdropCamera);renderer.clearDepth();renderer.render(scene,camera);
+   return {background,explorer,position:[...screen]};
+  },
   target(p){walker.target(fromScreen(p,camera.aspect));},
   direction(x,y){walker.direction(x,y);},stop(){walker.stop();},listen(fn){listener=fn;listener?.(screen,false);},visible(value){show=value;},
   dispose(){alive=false;cancelAnimationFrame(raf);observer.disconnect();scene.traverse(o=>{o.geometry?.dispose();if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();});panorama.dispose();sun.shadow.dispose();renderer.forceContextLoss();renderer.dispose();renderer.domElement.remove();}

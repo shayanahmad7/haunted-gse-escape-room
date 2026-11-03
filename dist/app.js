@@ -1,9 +1,10 @@
-import {createLobbyCharacter} from './lobby-character.js?v=1.5.1';
-import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.5.1';
+import {createLobbyCharacter} from './lobby-character.js?v=1.6.0';
+import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.6.0';
 const app=document.getElementById('app');
 const lobbyScene='2172808776581645156';
 const outsideScene='2172833417257813860';
 let solved=[];try{solved=validProgress(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'));}catch{}
+const jumpedRooms=new Set();let jumpInProgress=false,pendingRoomHelp=false;
 let view='board',active=null,lastCompleted=null,lastLeft=null,roomFrame=null,lobbyFrame=null,tracker=null,loadTimeout,character=null,controlCleanup=null,explorerHidden=false;
 const lock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
 const arrow='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"/></svg>';
@@ -38,7 +39,7 @@ document.getElementById('room-controls').onclick=showRoomControls;
 if(lobby)document.getElementById('toggle-explorer').onclick=()=>{explorerHidden=!explorerHidden;character?.visible(!explorerHidden);stage.classList.toggle('explorer-hidden',explorerHidden);document.getElementById('toggle-explorer').textContent=explorerHidden?'Show explorer':'Hide explorer';};
 }
 function mountRoomHelp(){
-addRoomTools(document.querySelector('.room-stage'));let seen=false;try{seen=sessionStorage.getItem('gse-room-controls-seen')==='yes';}catch{}if(!seen)showRoomControls();
+addRoomTools(document.querySelector('.room-stage'));let seen=false;try{seen=sessionStorage.getItem('gse-room-controls-seen')==='yes';}catch{}if(!seen){if(jumpInProgress)pendingRoomHelp=true;else showRoomControls();}
 }
 function mountCompanionControls(stage){
 if(!character)return;const char=character,drag=document.createElement('button');drag.className='explorer-drag';drag.setAttribute('aria-label','Drag explorer to walk around the lobby');drag.title='Drag to walk. Arrow keys also move the explorer.';stage.append(drag);
@@ -62,8 +63,21 @@ stage.classList.toggle('explorer-hidden',explorerHidden);char.visible(!explorerH
 function showRoomControls(){
 if(document.querySelector('.room-guide'))return;const lobbyGuide=view==='board';const dialog=document.createElement('dialog');dialog.className='room-guide';dialog.setAttribute('aria-labelledby','guide-title');dialog.innerHTML=view==='board'?'<span class="eyebrow">LOBBY CONTROLS</span><h2 id="guide-title">Walk around the lobby</h2><ol><li><strong>Move the explorer.</strong> Hold the arrow keys or W, A, S, D. You can also hold the on-screen arrows.</li><li><strong>Choose a destination.</strong> Drag the explorer to a spot on the floor. It will walk around the sofa to reach it.</li><li><strong>Enter a room.</strong> Choose its number from the room directory.</li></ol><p class="guide-note">The lobby view stays fixed so furniture and walls line up with the walking area. Each puzzle room has its own 360° controls.</p><button class="primary" id="close-guide">Got it '+arrow+'</button>':'<span class="eyebrow">ROOM CONTROLS</span><h2 id="guide-title">Explore the room</h2><ol><li><strong>Look around.</strong> Click and drag the background. On a phone, swipe with one finger.</li><li><strong>Zoom in.</strong> Use your mouse wheel or pinch with two fingers.</li><li><strong>Open clues.</strong> Click the markers. Close the panel when you want to keep exploring.</li><li><strong>Unlock the door.</strong> Open its marker and enter your answer when you are ready.</li><li><strong>Return to the lobby.</strong> Use Return to lobby whenever you want to leave the room.</li></ol><p class="guide-note">Dragging the background turns your view. Furniture and other objects in the photo cannot be picked up.</p><button class="primary" id="close-guide">Got it '+arrow+'</button>' ;document.body.append(dialog);dialog.showModal();dialog.querySelector('#close-guide').onclick=()=>dialog.close();dialog.onclose=()=>{if(!lobbyGuide)try{sessionStorage.setItem('gse-room-controls-seen','yes')}catch{}dialog.remove();};
 }
-function enterRoom(number){const room=ROOMS.find(r=>r.number===number);if(!room||!canEnterRoom(number,solved))return;active=room;lastCompleted=null;lastLeft=null;view='room';render();}
-function newAttempt(){const dialog=document.createElement('dialog');dialog.className='reset-dialog';dialog.innerHTML='<h2>Start a new escape?</h2><p>This clears the completed missions on this browser.</p><div><button class="text-button" id="keep-progress">Keep my progress</button><button class="primary" id="reset-progress">Start again</button></div>';document.body.append(dialog);dialog.showModal();dialog.querySelector('#keep-progress').onclick=()=>dialog.close();dialog.querySelector('#reset-progress').onclick=()=>{solved=[];save();active=null;lastCompleted=null;lastLeft=null;view='board';dialog.close();render()};dialog.onclose=()=>dialog.remove();}
+function enterRoom(number){
+ const room=ROOMS.find(r=>r.number===number);if(jumpInProgress||!room||!canEnterRoom(number,solved))return;
+ let shot=null,stage=document.querySelector('.lobby-stage');
+ if(view==='board'&&!jumpedRooms.has(number)&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&character&&stage){try{shot=character.snapshots();}catch{}}
+ jumpedRooms.add(number);let overlay=null,rect=null;
+ if(shot){rect=stage.getBoundingClientRect();overlay=document.createElement('div');overlay.className='room-jump';overlay.setAttribute('aria-hidden','true');overlay.style.top=rect.top+'px';overlay.style.height=rect.height+'px';const background=new Image(),explorer=new Image();background.className='jump-background';explorer.className='jump-explorer';background.src=shot.background;explorer.src=shot.explorer;explorer.style.transformOrigin=(shot.position[0]*100)+'% '+(shot.position[1]*100)+'%';overlay.append(background,explorer);document.body.append(overlay);jumpInProgress=true;}
+ active=room;lastCompleted=null;lastLeft=null;view='room';render();
+ if(!overlay)return;
+ const dx=(.5-shot.position[0])*rect.width,dy=(.24-shot.position[1])*rect.height;
+ const background=overlay.querySelector('.jump-background'),explorer=overlay.querySelector('.jump-explorer');
+ const flight=explorer.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate('+dx*.40+'px,'+(dy*.62-45)+'px) scale(.70) rotate(-8deg)',opacity:1,offset:.45},{transform:'translate('+dx+'px,'+dy+'px) scale(.12) rotate(4deg)',opacity:0}],{duration:620,easing:'cubic-bezier(.22,.65,.3,1)',fill:'forwards'});
+ const backdrop=background.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.045)',opacity:.92,offset:.35},{transform:'scale(1.12)',opacity:0}],{duration:620,easing:'ease-in',fill:'forwards'});
+ Promise.allSettled([flight.finished,backdrop.finished]).then(()=>{overlay.remove();jumpInProgress=false;const help=pendingRoomHelp;pendingRoomHelp=false;if(help&&view==='room'&&active?.number===number)showRoomControls();});
+}
+function newAttempt(){const dialog=document.createElement('dialog');dialog.className='reset-dialog';dialog.innerHTML='<h2>Start a new escape?</h2><p>This clears the completed missions on this browser.</p><div><button class="text-button" id="keep-progress">Keep my progress</button><button class="primary" id="reset-progress">Start again</button></div>';document.body.append(dialog);dialog.showModal();dialog.querySelector('#keep-progress').onclick=()=>dialog.close();dialog.querySelector('#reset-progress').onclick=()=>{solved=[];save();jumpedRooms.clear();active=null;lastCompleted=null;lastLeft=null;view='board';dialog.close();render()};dialog.onclose=()=>dialog.remove();}
 function sceneViewed(m,id){return (m.action==='scene.view'&&String(m.sceneId)===id)||(m.action==='TL_STAT'&&m.event==='scene.view'&&String(m.scene?.id)===id);}
 window.addEventListener('message',event=>{
 if(!isRoomOrigin(event.origin))return;const message=parseRoomMessage(event.data);if(!message)return;

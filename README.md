@@ -66,7 +66,7 @@ npm run vendor
 
 ## Current version
 
-Version 1.5.1 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
+Version 1.6.0 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
 
 Website source snapshot: primary Site commit `40e7f1faf650f067e8de0ec833a8778dcfc16a71`.
 
@@ -81,3 +81,5 @@ Hold arrow keys or WASD anywhere in the lobby, or use the on-screen arrows. Drag
 The lobby uses the existing panorama from the project with a fixed camera so collision boundaries stay aligned at different screen sizes. This is an approximation based on the photograph, not a surveyed 3D scan. The original ThingLink scenes and backups are unchanged. The local panorama is `dist/assets/gse-lobby-panorama.jpg`, from the project’s publicly shared lobby scene 2172808776581645156.
 
 Puzzle rooms open directly in their original ThingLink 360° view. There is no room explorer and no walking/clue mode switch. The explorer and collision-aware movement remain in the main lobby only.
+
+On the first visit to each room in an attempt, the explorer makes a 620 ms flying hop over the existing lobby panorama, which fades directly into the original ThingLink room. Revisits enter directly. Reduced-motion preferences skip the flight. There are no travel scenes, elevators, in-room characters, or mode switches. Room locks and scoring are checked before the animation begins.
