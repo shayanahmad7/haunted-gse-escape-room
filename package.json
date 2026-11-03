@@ -2,8 +2,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test mission-state.test.js lobby-navigation.test.js",
-    "check": "node --check dist/app.js && node --check dist/lobby-character.js && node --check dist/lobby-navigation.js && node --check dist/mission-state.js",
+    "test": "node --test mission-state.test.js lobby-navigation.test.js room-walking.test.js",
+    "check": "node --check dist/app.js && node --check dist/lobby-character.js && node --check dist/lobby-navigation.js && node --check dist/mission-state.js && node --check dist/room-walking.js",
     "vendor": "node scripts/vendor-three.mjs",
     "start": "python3 -m http.server 8080 --directory dist"
   },
@@ -11,6 +11,6 @@
     "three": "0.187.0"
   },
   "name": "haunted-gse-escape-room",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A five-mission Halloween escape experience with a 3D explorer and ThingLink rooms."
 }
