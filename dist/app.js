@@ -1,5 +1,5 @@
-import {createLobbyCharacter} from './lobby-character.js?v=1.6.0';
-import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.6.0';
+import {createLobbyCharacter} from './lobby-character.js?v=1.6.1';
+import {ROOMS,STORAGE_KEY,validProgress,requiredCompletedCount,requiredRemaining,isRoomUnlocked,canEnterRoom,canEscape,isRoomOrigin,parseRoomMessage,createDoorTracker} from './mission-state.js?v=1.6.1';
 const app=document.getElementById('app');
 const lobbyScene='2172808776581645156';
 const outsideScene='2172833417257813860';
@@ -65,17 +65,15 @@ if(document.querySelector('.room-guide'))return;const lobbyGuide=view==='board';
 }
 function enterRoom(number){
  const room=ROOMS.find(r=>r.number===number);if(jumpInProgress||!room||!canEnterRoom(number,solved))return;
- let shot=null,stage=document.querySelector('.lobby-stage');
- if(view==='board'&&!jumpedRooms.has(number)&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&character&&stage){try{shot=character.snapshots();}catch{}}
- jumpedRooms.add(number);let overlay=null,rect=null;
- if(shot){rect=stage.getBoundingClientRect();overlay=document.createElement('div');overlay.className='room-jump';overlay.setAttribute('aria-hidden','true');overlay.style.top=rect.top+'px';overlay.style.height=rect.height+'px';const background=new Image(),explorer=new Image();background.className='jump-background';explorer.className='jump-explorer';background.src=shot.background;explorer.src=shot.explorer;explorer.style.transformOrigin=(shot.position[0]*100)+'% '+(shot.position[1]*100)+'%';overlay.append(background,explorer);document.body.append(overlay);jumpInProgress=true;}
- active=room;lastCompleted=null;lastLeft=null;view='room';render();
+ const stage=document.querySelector('.lobby-stage'),host=document.getElementById('lobby-character');let flyer=null,overlay=null;
+ if(view==='board'&&!jumpedRooms.has(number)&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&character&&stage&&host){
+  const rect=stage.getBoundingClientRect();overlay=document.createElement('div');overlay.className='room-jump';overlay.setAttribute('aria-hidden','true');overlay.style.top=rect.top+'px';overlay.style.height=rect.height+'px';
+  controlCleanup?.();controlCleanup=null;flyer=character;character=null;host.removeAttribute('id');host.className='jump-canvas';overlay.append(host);document.body.append(overlay);jumpInProgress=true;
+ }
+ jumpedRooms.add(number);active=room;lastCompleted=null;lastLeft=null;view='room';render();
  if(!overlay)return;
- const dx=(.5-shot.position[0])*rect.width,dy=(.24-shot.position[1])*rect.height;
- const background=overlay.querySelector('.jump-background'),explorer=overlay.querySelector('.jump-explorer');
- const flight=explorer.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate('+dx*.40+'px,'+(dy*.62-45)+'px) scale(.70) rotate(-8deg)',opacity:1,offset:.45},{transform:'translate('+dx+'px,'+dy+'px) scale(.12) rotate(4deg)',opacity:0}],{duration:620,easing:'cubic-bezier(.22,.65,.3,1)',fill:'forwards'});
- const backdrop=background.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.045)',opacity:.92,offset:.35},{transform:'scale(1.12)',opacity:0}],{duration:620,easing:'ease-in',fill:'forwards'});
- Promise.allSettled([flight.finished,backdrop.finished]).then(()=>{overlay.remove();jumpInProgress=false;const help=pendingRoomHelp;pendingRoomHelp=false;if(help&&view==='room'&&active?.number===number)showRoomControls();});
+ const fade=overlay.animate([{opacity:1},{opacity:1,offset:.72},{opacity:0}],{duration:680,easing:'ease-in',fill:'forwards'});
+ Promise.allSettled([flyer.fly(),fade.finished]).then(()=>{flyer.dispose();overlay.remove();jumpInProgress=false;const help=pendingRoomHelp;pendingRoomHelp=false;if(help&&view==='room'&&active?.number===number)showRoomControls();});
 }
 function newAttempt(){const dialog=document.createElement('dialog');dialog.className='reset-dialog';dialog.innerHTML='<h2>Start a new escape?</h2><p>This clears the completed missions on this browser.</p><div><button class="text-button" id="keep-progress">Keep my progress</button><button class="primary" id="reset-progress">Start again</button></div>';document.body.append(dialog);dialog.showModal();dialog.querySelector('#keep-progress').onclick=()=>dialog.close();dialog.querySelector('#reset-progress').onclick=()=>{solved=[];save();jumpedRooms.clear();active=null;lastCompleted=null;lastLeft=null;view='board';dialog.close();render()};dialog.onclose=()=>dialog.remove();}
 function sceneViewed(m,id){return (m.action==='scene.view'&&String(m.sceneId)===id)||(m.action==='TL_STAT'&&m.event==='scene.view'&&String(m.scene?.id)===id);}

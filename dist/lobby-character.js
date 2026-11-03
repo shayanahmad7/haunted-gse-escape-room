@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {createWalker,fromScreen,toScreen} from './lobby-navigation.js?v=1.6.0';
+import {createWalker,fromScreen,toScreen} from './lobby-navigation.js?v=1.6.1';
 
 // A lobby-only 3D mascot. Puzzle rooms use the original ThingLink viewer directly.
 export function createLobbyCharacter(host,{position=[.48,.88],onReady=()=>{}}={}){
@@ -47,7 +47,7 @@ export function createLobbyCharacter(host,{position=[.48,.88],onReady=()=>{}}={}
  mesh(new THREE.CylinderGeometry(.09,.08,.16,8),mat(0xffc866),lantern);
  for(const y of [-.09,.09])mesh(new THREE.CylinderGeometry(.105,.105,.025,8),hair,lantern,0,y,0);
  const walker=createWalker(position);
- let alive=true,raf,previous=performance.now(),elapsed=0,gait=0,screen=[...position],listener=null,show=true;
+ let alive=true,raf,previous=performance.now(),elapsed=0,gait=0,screen=[...position],listener=null,show=true,flight=null;
  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),ray=new THREE.Raycaster();
  function groundPoint(p){ray.setFromCamera(new THREE.Vector2(p[0]*2-1,1-p[1]*2),camera);return ray.ray.intersectPlane(plane,new THREE.Vector3())||new THREE.Vector3();}
  function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();backdropCamera.aspect=w/h;backdropCamera.updateProjectionMatrix();walker.resize(w/h);screen=toScreen(walker.position(),w/h);rig.position.copy(groundPoint(screen));}
@@ -55,20 +55,26 @@ export function createLobbyCharacter(host,{position=[.48,.88],onReady=()=>{}}={}
  function walkPose(t){hips.forEach((l,i)=>l.rotation.x=Math.sin(t+i*Math.PI)*.55);knees.forEach((k,i)=>k.rotation.x=Math.max(0,-Math.sin(t+i*Math.PI))*.6);arms.forEach((a,i)=>a.rotation.x=-Math.sin(t+i*Math.PI)*.42);body.position.y=Math.abs(Math.sin(t))*.025;body.rotation.x=.04;}
  function standPose(dt){const settle=Math.exp(-dt*14);hips.forEach(l=>l.rotation.x*=settle);knees.forEach(k=>k.rotation.x*=settle);arms.forEach(a=>a.rotation.x*=settle);body.rotation.x*=settle;body.position.y=body.position.y*settle+Math.sin(elapsed*2)*.008*(1-settle);}
  function animate(now){if(!alive)return;const wall=Math.max(0,(now-previous)/1000),dt=Math.min(wall,.05);previous=now;elapsed+=wall;
-  const movement=walker.step(dt),old=rig.position.clone(),moving=movement.moving;screen=movement.position;rig.position.copy(groundPoint(screen));
-  if(moving){const d=rig.position.clone().sub(old),yaw=Math.atan2(d.x,d.z);rig.rotation.y+=Math.atan2(Math.sin(yaw-rig.rotation.y),Math.cos(yaw-rig.rotation.y))*Math.min(1,dt*10);gait+=movement.travelled*31;walkPose(gait);}else standPose(dt);
+  let moving=false;
+  if(flight){
+   const t=Math.min(1,(now-flight.start)/680),armsUp=Math.min(1,t/.28),swing=1-Math.pow(1-armsUp,3),rise=Math.pow(Math.max(0,(t-.12)/.88),1.65);
+   rig.position.copy(flight.origin);rig.position.y+=rise*15-Math.sin(Math.min(1,t/.14)*Math.PI)*.10;
+   rig.rotation.y+=Math.atan2(Math.sin(-rig.rotation.y),Math.cos(-rig.rotation.y))*Math.min(1,dt*12);
+   arms.forEach((a,i)=>{a.rotation.x=-.25*swing;a.rotation.z=(i===0?-1:1)*2.65*swing;});
+   hips.forEach(l=>l.rotation.x=-.30*swing);knees.forEach(k=>k.rotation.x=.72*swing);body.rotation.x=-.10*swing;body.position.y=0;
+   const tilt=Math.min(1,t/.75),ease=tilt*tilt*(3-2*tilt);backdropCamera.lookAt(1,-.22+1.05*ease,0);
+   if(t===1){const resolve=flight.resolve;flight=null;resolve();}
+  }else{
+   const movement=walker.step(dt),old=rig.position.clone();moving=movement.moving;screen=movement.position;rig.position.copy(groundPoint(screen));
+   if(moving){const d=rig.position.clone().sub(old),yaw=Math.atan2(d.x,d.z);rig.rotation.y+=Math.atan2(Math.sin(yaw-rig.rotation.y),Math.cos(yaw-rig.rotation.y))*Math.min(1,dt*10);gait+=movement.travelled*31;walkPose(gait);}else standPose(dt);
+  }
   listener?.(screen,moving);rig.visible=show;renderer.clear();renderer.render(backdrop,backdropCamera);renderer.clearDepth();renderer.render(scene,camera);raf=requestAnimationFrame(animate);
  }
  raf=requestAnimationFrame(animate);
  return {
-  snapshots(){
-   renderer.clear();renderer.render(backdrop,backdropCamera);const background=renderer.domElement.toDataURL('image/webp',.85);
-   ground.visible=false;rig.visible=show;renderer.clear();renderer.render(scene,camera);const explorer=renderer.domElement.toDataURL('image/webp',.9);ground.visible=true;
-   renderer.clear();renderer.render(backdrop,backdropCamera);renderer.clearDepth();renderer.render(scene,camera);
-   return {background,explorer,position:[...screen]};
-  },
+  fly(){walker.stop();ground.visible=false;return new Promise(resolve=>{flight={start:performance.now(),origin:rig.position.clone(),resolve};});},
   target(p){walker.target(fromScreen(p,camera.aspect));},
   direction(x,y){walker.direction(x,y);},stop(){walker.stop();},listen(fn){listener=fn;listener?.(screen,false);},visible(value){show=value;},
-  dispose(){alive=false;cancelAnimationFrame(raf);observer.disconnect();scene.traverse(o=>{o.geometry?.dispose();if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();});panorama.dispose();sun.shadow.dispose();renderer.forceContextLoss();renderer.dispose();renderer.domElement.remove();}
+  dispose(){if(flight){flight.resolve();flight=null;}alive=false;cancelAnimationFrame(raf);observer.disconnect();scene.traverse(o=>{o.geometry?.dispose();if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();});panorama.dispose();sun.shadow.dispose();renderer.forceContextLoss();renderer.dispose();renderer.domElement.remove();}
  };
 }
