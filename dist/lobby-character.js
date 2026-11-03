@@ -1,12 +1,18 @@
 import * as THREE from './vendor/three.module.js';
+import {createWalker,fromScreen,toScreen} from './lobby-navigation.js?v=1.4.0';
 
 // A lobby-only 3D mascot. Puzzle rooms use the original ThingLink viewer directly.
-export function createLobbyCharacter(host,{position=[.48,.88]}={}){
+export function createLobbyCharacter(host,{position=[.48,.88],onReady=()=>{}}={}){
  let renderer;
  try{renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});}catch{return null;}
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
- renderer.setClearColor(0x000000,0);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.setClearColor(0x000000,0);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.domElement.setAttribute('aria-hidden','true');host.append(renderer.domElement);
+ const backdrop=new THREE.Scene(),backdropCamera=new THREE.PerspectiveCamera(70,1,.1,10);
+ backdropCamera.lookAt(1,-.22,0);
+ const panorama=new THREE.TextureLoader().load('./assets/gse-lobby-panorama.jpg',()=>{if(alive)onReady();});
+ panorama.colorSpace=THREE.SRGBColorSpace;panorama.mapping=THREE.EquirectangularReflectionMapping;backdrop.background=panorama;
+ renderer.autoClear=false;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(40,1,.1,80);
  camera.position.set(0,7,12);camera.lookAt(0,.2,0);camera.updateMatrixWorld();
  scene.add(new THREE.HemisphereLight(0xffe3b8,0x536459,2.5));
@@ -40,23 +46,23 @@ export function createLobbyCharacter(host,{position=[.48,.88]}={}){
  mesh(new THREE.TorusGeometry(.075,.012,6,12),hair,lantern,0,.11,0);
  mesh(new THREE.CylinderGeometry(.09,.08,.16,8),mat(0xffc866),lantern);
  for(const y of [-.09,.09])mesh(new THREE.CylinderGeometry(.105,.105,.025,8),hair,lantern,0,y,0);
- let alive=true,raf,previous=performance.now(),elapsed=0,screen=[...position],target=[...position],direction=[0,0],listener=null,show=true;
+ const walker=createWalker(position);
+ let alive=true,raf,previous=performance.now(),elapsed=0,gait=0,screen=[...position],listener=null,show=true;
  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),ray=new THREE.Raycaster();
  function groundPoint(p){ray.setFromCamera(new THREE.Vector2(p[0]*2-1,1-p[1]*2),camera);return ray.ray.intersectPlane(plane,new THREE.Vector3())||new THREE.Vector3();}
- function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();rig.position.copy(groundPoint(screen));}
+ function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();backdropCamera.aspect=w/h;backdropCamera.updateProjectionMatrix();walker.resize(w/h);screen=toScreen(walker.position(),w/h);rig.position.copy(groundPoint(screen));}
  const observer=new ResizeObserver(resize);observer.observe(host);resize();rig.position.copy(groundPoint(screen));rig.rotation.y=-.2;
  function walkPose(t){hips.forEach((l,i)=>l.rotation.x=Math.sin(t+i*Math.PI)*.55);knees.forEach((k,i)=>k.rotation.x=Math.max(0,-Math.sin(t+i*Math.PI))*.6);arms.forEach((a,i)=>a.rotation.x=-Math.sin(t+i*Math.PI)*.42);body.position.y=Math.abs(Math.sin(t))*.025;body.rotation.x=.04;}
- function standPose(){hips.forEach(l=>l.rotation.x=0);knees.forEach(k=>k.rotation.x=0);arms.forEach(a=>a.rotation.x=0);body.rotation.x=0;body.position.y=Math.sin(elapsed*2)*.01;}
+ function standPose(dt){const settle=Math.exp(-dt*14);hips.forEach(l=>l.rotation.x*=settle);knees.forEach(k=>k.rotation.x*=settle);arms.forEach(a=>a.rotation.x*=settle);body.rotation.x*=settle;body.position.y=body.position.y*settle+Math.sin(elapsed*2)*.008*(1-settle);}
  function animate(now){if(!alive)return;const wall=Math.max(0,(now-previous)/1000),dt=Math.min(wall,.05);previous=now;elapsed+=wall;
-  if(direction[0]||direction[1])target=[Math.min(.95,Math.max(.05,screen[0]+direction[0]*dt*.13)),Math.min(.95,Math.max(.37,screen[1]+direction[1]*dt*.13))];
-  const dx=target[0]-screen[0],dy=target[1]-screen[1],distance=Math.hypot(dx,dy),moving=distance>.001;
-  if(moving){const speed=Math.min(distance,dt*.17),old=rig.position.clone();screen=[screen[0]+dx/distance*speed,screen[1]+dy/distance*speed];rig.position.copy(groundPoint(screen));const d=rig.position.clone().sub(old),yaw=Math.atan2(d.x,d.z);rig.rotation.y+=Math.atan2(Math.sin(yaw-rig.rotation.y),Math.cos(yaw-rig.rotation.y))*Math.min(1,dt*12);walkPose(elapsed*11);}else standPose();
-  listener?.(screen,moving);if(show)renderer.render(scene,camera);raf=requestAnimationFrame(animate);
+  const movement=walker.step(dt),old=rig.position.clone(),moving=movement.moving;screen=movement.position;rig.position.copy(groundPoint(screen));
+  if(moving){const d=rig.position.clone().sub(old),yaw=Math.atan2(d.x,d.z);rig.rotation.y+=Math.atan2(Math.sin(yaw-rig.rotation.y),Math.cos(yaw-rig.rotation.y))*Math.min(1,dt*10);gait+=movement.travelled*31;walkPose(gait);}else standPose(dt);
+  listener?.(screen,moving);rig.visible=show;renderer.clear();renderer.render(backdrop,backdropCamera);renderer.clearDepth();renderer.render(scene,camera);raf=requestAnimationFrame(animate);
  }
  raf=requestAnimationFrame(animate);
  return {
-  target(p){target=[Math.min(.95,Math.max(.05,p[0])),Math.min(.95,Math.max(.37,p[1]))];},
-  direction(x,y){direction=[x,y];},listen(fn){listener=fn;listener?.(screen,false);},visible(value){show=value;host.style.visibility=value?'visible':'hidden';},
-  dispose(){alive=false;cancelAnimationFrame(raf);observer.disconnect();scene.traverse(o=>{o.geometry?.dispose();if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();});sun.shadow.dispose();renderer.forceContextLoss();renderer.dispose();renderer.domElement.remove();}
+  target(p){walker.target(fromScreen(p,camera.aspect));},
+  direction(x,y){walker.direction(x,y);},stop(){walker.stop();},listen(fn){listener=fn;listener?.(screen,false);},visible(value){show=value;},
+  dispose(){alive=false;cancelAnimationFrame(raf);observer.disconnect();scene.traverse(o=>{o.geometry?.dispose();if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();});panorama.dispose();sun.shadow.dispose();renderer.forceContextLoss();renderer.dispose();renderer.domElement.remove();}
  };
 }

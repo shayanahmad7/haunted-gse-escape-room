@@ -66,10 +66,16 @@ npm run vendor
 
 ## Current version
 
-Version 1.3.2 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
+Version 1.4.0 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
 
 Website source snapshot: primary Site commit `40e7f1faf650f067e8de0ec833a8778dcfc16a71`.
 
 Application and stylesheet URLs are versioned so browser caches pick up the current interface after an update.
 
 The final exit opens the GSE exterior view, with a congratulations message and the completed room list.
+
+## Explorer movement
+
+Hold arrow keys or WASD anywhere in the lobby, or use the on-screen arrows. Dragging the explorer selects a floor destination and follows a route around the sofa. Foot collision boundaries prevent crossing the sofa, glass wall and window wall; speed eases in and out and diagonal input is normalized. Movement pauses in dialogs, when hidden, and on browser blur. Puzzle rooms have no explorer overlay.
+
+The lobby uses the existing panorama from the project with a fixed camera so collision boundaries stay aligned at different screen sizes. This is an approximation based on the photograph, not a surveyed 3D scan. The original ThingLink scenes and backups are unchanged. The local panorama is `dist/assets/gse-lobby-panorama.jpg`, from the project’s publicly shared lobby scene 2172808776581645156.
