@@ -10,15 +10,14 @@ export const toScreen=(p,aspect)=>[.5+(p[0]-.5)*REFERENCE_ASPECT/aspect,p[1]];
 export const fromScreen=(p,aspect)=>[.5+(p[0]-.5)*aspect/REFERENCE_ASPECT,p[1]];
 function inside(p,poly){let hit=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;}
 function edgeDistance(p,poly){const [x,y]=metric(p);let min=Infinity;for(let i=0;i<poly.length;i++){const a=metric(poly[i]),b=metric(poly[(i+1)%poly.length]),dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));min=Math.min(min,Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy));}return min;}
-export function createNavigation({floor=FLOOR,obstacles=[SOFA],spawn=[.48,.88]}={}){
-function isWalkable(p,aspect=REFERENCE_ASPECT){const s=toScreen(p,aspect);return s[0]>.025+FOOT_RADIUS/aspect&&s[0]<.975-FOOT_RADIUS/aspect&&p[1]<.97&&inside(p,floor)&&edgeDistance(p,floor)>=FOOT_RADIUS&&obstacles.every(poly=>!inside(p,poly)&&edgeDistance(p,poly)>=FOOT_RADIUS);}
-function clearSegment(a,b,aspect=REFERENCE_ASPECT){const steps=Math.max(1,Math.ceil(length(a,b)/.008));for(let i=0;i<=steps;i++){const t=i/steps;if(!isWalkable([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],aspect))return false;}return true;}
-function moveAndSlide(p,delta,aspect=REFERENCE_ASPECT){let at=[...p];const n=Math.max(1,Math.ceil(Math.hypot(delta[0]*REFERENCE_ASPECT,delta[1])/.006)),d=delta.map(x=>x/n);for(let i=0;i<n;i++){const full=[at[0]+d[0],at[1]+d[1]];if(isWalkable(full,aspect)){at=full;continue;}const x=[at[0]+d[0],at[1]],y=[at[0],at[1]+d[1]];if(isWalkable(x,aspect))at=x;if(isWalkable([at[0],y[1]],aspect))at=[at[0],y[1]];}return at;}
+export function isWalkable(p,aspect=REFERENCE_ASPECT){const s=toScreen(p,aspect);return s[0]>.025+FOOT_RADIUS/aspect&&s[0]<.975-FOOT_RADIUS/aspect&&p[1]<.97&&inside(p,FLOOR)&&edgeDistance(p,FLOOR)>=FOOT_RADIUS&&!inside(p,SOFA)&&edgeDistance(p,SOFA)>=FOOT_RADIUS;}
+export function clearSegment(a,b,aspect=REFERENCE_ASPECT){const steps=Math.max(1,Math.ceil(length(a,b)/.008));for(let i=0;i<=steps;i++){const t=i/steps;if(!isWalkable([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],aspect))return false;}return true;}
+export function moveAndSlide(p,delta,aspect=REFERENCE_ASPECT){let at=[...p];const n=Math.max(1,Math.ceil(Math.hypot(delta[0]*REFERENCE_ASPECT,delta[1])/.006)),d=delta.map(x=>x/n);for(let i=0;i<n;i++){const full=[at[0]+d[0],at[1]+d[1]];if(isWalkable(full,aspect)){at=full;continue;}const x=[at[0]+d[0],at[1]],y=[at[0],at[1]+d[1]];if(isWalkable(x,aspect))at=x;if(isWalkable([at[0],y[1]],aspect))at=[at[0],y[1]];}return at;}
 const COLS=76,ROWS=46;
 const point=id=>[(id%COLS)/(COLS-1),.4+Math.floor(id/COLS)/(ROWS-1)*.57];
 let cachedAspect=-1,grid=[];
 function floorGrid(aspect){if(aspect!==cachedAspect){cachedAspect=aspect;grid=Array.from({length:COLS*ROWS},(_,id)=>isWalkable(point(id),aspect));}return grid;}
-function findPath(start,requested,aspect=REFERENCE_ASPECT){
+export function findPath(start,requested,aspect=REFERENCE_ASPECT){
  if(!isWalkable(start,aspect))return [];
  if(isWalkable(requested,aspect)&&clearSegment(start,requested,aspect))return [[...requested]];
  const valid=floorGrid(aspect);let first=-1,last=-1,nearStart=Infinity,nearEnd=Infinity;
@@ -31,19 +30,11 @@ function findPath(start,requested,aspect=REFERENCE_ASPECT){
  }
  return [];
 }
-return {isWalkable,clearSegment,moveAndSlide,findPath,spawn};
-}
-const lobbyNavigation=createNavigation();
-export const isWalkable=(...args)=>lobbyNavigation.isWalkable(...args);
-export const clearSegment=(...args)=>lobbyNavigation.clearSegment(...args);
-export const moveAndSlide=(...args)=>lobbyNavigation.moveAndSlide(...args);
-export const findPath=(...args)=>lobbyNavigation.findPath(...args);
-export function createWalker(initial=[.48,.88],layout){
- const {isWalkable,moveAndSlide,findPath,spawn}=createNavigation(layout);
+export function createWalker(initial=[.48,.88]){
  let position=[...initial],velocity=[0,0],input=[0,0],route=[],aspect=REFERENCE_ASPECT;
  return {
   position:()=>[...position],
-  resize(value){aspect=value;if(!isWalkable(position,aspect)){position=[...spawn];velocity=[0,0];route=[];}},
+  resize(value){aspect=value;if(!isWalkable(position,aspect)){position=[.5,.88];velocity=[0,0];route=[];}},
   direction(x,y){input=[x,y];if(x||y)route=[];},
   target(p){input=[0,0];route=findPath(position,p,aspect);},
   stop(){input=[0,0];velocity=[0,0];route=[];},

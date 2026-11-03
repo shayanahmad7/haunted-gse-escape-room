@@ -66,7 +66,7 @@ npm run vendor
 
 ## Current version
 
-Version 1.5.0 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
+Version 1.5.1 simplifies navigation to direct room entry and keeps the explorer only in the lobby. Earlier versions remain available in Git history and tagged releases. Existing browser progress is preserved.
 
 Website source snapshot: primary Site commit `40e7f1faf650f067e8de0ec833a8778dcfc16a71`.
 
@@ -76,12 +76,8 @@ The final exit opens the GSE exterior view, with a congratulations message and t
 
 ## Explorer movement
 
-Hold arrow keys or WASD anywhere in the lobby, or use the on-screen arrows. Dragging the explorer selects a floor destination and follows a route around the sofa. Foot collision boundaries prevent crossing the sofa, glass wall and window wall; speed eases in and out and diagonal input is normalized. Movement pauses in dialogs, when hidden, and on browser blur. Each puzzle room has a mapped walking view and a separate original 360° clue view.
+Hold arrow keys or WASD anywhere in the lobby, or use the on-screen arrows. Dragging the explorer selects a floor destination and follows a route around the sofa. Foot collision boundaries prevent crossing the sofa, glass wall and window wall; speed eases in and out and diagonal input is normalized. Movement pauses in dialogs, when hidden, and on browser blur. Puzzle rooms have no explorer overlay.
 
 The lobby uses the existing panorama from the project with a fixed camera so collision boundaries stay aligned at different screen sizes. This is an approximation based on the photograph, not a surveyed 3D scan. The original ThingLink scenes and backups are unchanged. The local panorama is `dist/assets/gse-lobby-panorama.jpg`, from the project’s publicly shared lobby scene 2172808776581645156.
 
-## Explorer in puzzle rooms
-
-Every room now opens with its own fixed panorama, starting point and floor/obstacle map. Use Walk around for collision-aware arrow-key movement, and Look for clues for the original ThingLink 360° view, tags and typed password door. Switching to clues removes the explorer and its keyboard listeners; switching back preserves its walking position. Walking, entering rooms and switching modes never award points. Room 357 remains locked until two distinct rooms are solved, and the four required rooms still open the main exit. A new attempt clears the saved walking positions for that session.
-
-The five room panoramas are copies of the images already used in the project’s public ThingLink scenes, saved in `dist/assets/room-*-panorama.jpg`. The original scenes, teammate puzzles, and backups are unchanged.
+Puzzle rooms open directly in their original ThingLink 360° view. There is no room explorer and no walking/clue mode switch. The explorer and collision-aware movement remain in the main lobby only.
